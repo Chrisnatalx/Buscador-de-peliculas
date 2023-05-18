@@ -1,18 +1,28 @@
+import { useCallback, useState } from 'react'
 import './App.css'
 import { Movies } from './components/Movies'
 import { useMovies } from './hooks/useMovies'
 import { useSearch } from './hooks/useSearch'
-
+import debounce from 'just-debounce-it'
 
 
 function App() {
-  const { search, setSearch, error } = useSearch()
-  const { movies, getMovies, loading } = useMovies({ search })
 
+  const [sort, setSort] = useState(false)
+  const { search, setSearch, error } = useSearch('')
+  const { movies, getMovies, loading } = useMovies({ search, sort })
+
+  const debouncedGetMovies = useCallback(
+    debounce(search => {
+      console.log('search', search)
+      getMovies({ search })
+    }, 400)
+    , [getMovies]
+  )
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    getMovies()
+    getMovies({ search })
     //forma controlada ( useState)
 
     // esta seria la manera de utilizar el useRef, pasandole una referencia, en este caso del input
@@ -26,9 +36,13 @@ function App() {
     // const { search } = Object.fromEntries(new window.FormData(event.target))
     // console.log(search)
   }
+  const handleSort = () => {
+    setSort(!sort)
+  }
   const handleChange = (event) => {
-
-    setSearch(event.target.value)
+    const newSearch = event.target.value
+    setSearch(newSearch)
+    debouncedGetMovies(newSearch)
   }
 
 
@@ -41,6 +55,7 @@ function App() {
           <h1>Buscador de pelicula</h1>
           <form className='form' onSubmit={handleSubmit}>
             <input value={search} onChange={handleChange} placeholder='Avengers, Star Wars, The Matrix...' />
+            <input type='checkbox' onChange={handleSort} checked={sort}></input>
             <button type='submit'>Buscar</button>
           </form>
           {error && <p style={{ color: 'red' }}>{error}</p>}
